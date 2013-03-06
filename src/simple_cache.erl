@@ -66,30 +66,12 @@ get(CacheName, LifeTime, Key, FunResult) ->
   case ets:lookup(RealName, Key) of
     [] ->
       % Not found, create it.
-      create_value(RealName, LifeTime, Key, FunResult);
-    [{Key, R, _CreatedTime, infinity}] -> R; % Found, wont expire, return the value.
-    [{Key, R, CreatedTime, LifeTime}] ->
-      TimeElapsed = now_usecs() - CreatedTime,
-      if
-        TimeElapsed > (LifeTime * 1000) ->
-          % expired? create a new value
-          create_value(RealName, LifeTime, Key, FunResult);
-        true -> R % Not expired, return it.
-      end
+      V = FunResult(),
+      ets:insert(RealName, {Key, V}),
+      erlang:send_after(
+        LifeTime, simple_cache_expirer, {expire, CacheName, Key}
+      ),
+      V;
+    [{Key, R}] -> R % Found, return the value.
   end.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Private API.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% @doc Creates a cache entry.
--spec create_value(string(), pos_integer(), term(), function()) -> term().
-create_value(RealName, LifeTime, Key, FunResult) ->
-  R = FunResult(),
-  ets:insert(RealName, {Key, R, now_usecs(), LifeTime}),
-  R.
-
-%% @doc Returns total amount of microseconds since 1/1/1.
--spec now_usecs() -> pos_integer().
-now_usecs() ->
-  {MegaSecs, Secs, MicroSecs} = os:timestamp(),
-  MegaSecs * 1000000000000 + Secs * 1000000 + MicroSecs.
