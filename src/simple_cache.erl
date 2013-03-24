@@ -38,7 +38,7 @@
 %% Public API.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% @doc Initializes a cache.
--spec init(string()) -> ok.
+-spec init(atom()) -> ok.
 init(CacheName) ->
   RealName = ?NAME(CacheName),
   RealName = ets:new(RealName, [
