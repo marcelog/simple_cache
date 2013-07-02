@@ -47,20 +47,20 @@ init(CacheName) ->
   ok.
 
 %% @doc Deletes the keys that match the given ets:matchspec() from the cache.
--spec flush(string(), term()) -> true.
+-spec flush(atom(), term()) -> true.
 flush(CacheName, Key) ->
   RealName = ?NAME(CacheName),
   ets:delete(RealName, Key).
 
 %% @doc Deletes all keys in the given cache.
--spec flush(string()) -> true.
+-spec flush(atom()) -> true.
 flush(CacheName) ->
   RealName = ?NAME(CacheName),
   true = ets:delete_all_objects(RealName).
 
 %% @doc Tries to lookup Key in the cache, and execute the given FunResult
 %% on a miss.
--spec get(string(), infinity|pos_integer(), term(), function()) -> term().
+-spec get(atom(), infinity|pos_integer(), term(), function()) -> term().
 get(CacheName, LifeTime, Key, FunResult) ->
   RealName = ?NAME(CacheName),
   case ets:lookup(RealName, Key) of
