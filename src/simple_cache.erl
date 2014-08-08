@@ -32,6 +32,7 @@
 %%% Public API.
 -export([init/1]).
 -export([get/4]).
+-export([get/2, set/4]).
 -export([flush/1, flush/2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,16 +63,29 @@ flush(CacheName) ->
 %% on a miss.
 -spec get(atom(), infinity|pos_integer(), term(), function()) -> term().
 get(CacheName, LifeTime, Key, FunResult) ->
+  case get(CacheName, Key) of
+    {ok, V} -> V;
+    {error, not_found} ->
+      V = FunResult(),
+      set(CacheName, LifeTime, Key, V),
+      V
+  end.
+
+-spec get(atom(), term()) -> {ok, term()} | {error, not_found}.
+get(CacheName, Key) ->
   RealName = ?NAME(CacheName),
   case ets:lookup(RealName, Key) of
     [] ->
-      % Not found, create it.
-      V = FunResult(),
-      ets:insert(RealName, {Key, V}),
-      erlang:send_after(
-        LifeTime, simple_cache_expirer, {expire, CacheName, Key}
-      ),
-      V;
-    [{Key, R}] -> R % Found, return the value.
+      {error, not_found};
+    [{Key, R}] ->
+      {ok, R} % Found, return the value.
   end.
 
+-spec set(atom(), infinity|pos_integer(), term(), term()) -> ok.
+set(CacheName, LifeTime, Key, Value) ->
+    RealName = ?NAME(CacheName),
+    ets:insert(RealName, {Key, Value}),
+    erlang:send_after(
+      LifeTime, simple_cache_expirer, {expire, CacheName, Key}
+     ),
+    ok.
