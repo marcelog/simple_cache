@@ -60,8 +60,8 @@ handle_cast(_Msg, State) ->
   {noreply, State}.
 
 -spec handle_info(any(), state()) -> {noreply, state()}.
-handle_info({expire, CacheName, Key}, State) ->
-  simple_cache:flush(CacheName, Key),
+handle_info({expire, CacheName, Key, Expiry}, State) ->
+  simple_cache:flush(CacheName, Key, Expiry),
   {noreply, State};
 
 handle_info(_Info, State) ->
